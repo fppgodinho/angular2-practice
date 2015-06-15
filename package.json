@@ -1,0 +1,35 @@
+{
+  "name": "angular2-practice",
+  "version": "1.0.0",
+  "description": "Angular 2 Tutorials",
+  "main": "run.js",
+  "scripts": {
+    "install": "npm run install-gulp && npm run install-gulp-inject",
+    "install-gulp": "npm install -g gulp",
+    "install-gulp-inject": "npm install --save-dev gulp-inject",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fppgodinho/angular2-practice.git"
+  },
+  "keywords": [
+    "AngularJS",
+    "2"
+  ],
+  "author": "fppgodinho@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fppgodinho/angular2-practice/issues"
+  },
+  "homepage": "https://github.com/fppgodinho/angular2-practice",
+  "dependencies": {
+    "express": "^4.12.4"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-inject": "^1.3.1",
+    "gulp-order": "^1.1.1",
+    "stream-series": "^0.1.1"
+  }
+}
