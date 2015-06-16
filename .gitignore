@@ -29,4 +29,5 @@ node_modules
 *.iws
 *.ipr
 *.iml
+client/public/lib/*
 client/src/3rdparty/angular
