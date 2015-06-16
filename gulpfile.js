@@ -53,10 +53,10 @@ gulp.task('prod', ['jquery-js', 'bootstrap-js', 'bootstrap-css', 'app-js', 'app-
             "./client/public/lib/bootstrap/**/*.*",
             "./client/public/lib/app/**/*.*",
         ]), { ignorePath: "/client/public/" }))
-        //.pipe(minifyHTML({
-        //    conditionals:   true,
-        //    spare:          true
-        //}))
+        .pipe(minifyHTML({
+            conditionals:   true,
+            spare:          true
+        }))
         .pipe(gulp.dest('./client/public'));
 
     return true;
