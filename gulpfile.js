@@ -24,8 +24,8 @@ function get3RDParties() {
 
 function getModules() {
     return [
-        ['./client/src/app/home/**/*.js', './client/src/app/home/**/*.css'],
-        ['./client/src/app/auth/**/*.js', './client/src/app/auth/**/*.css']
+        ['./client/src/app/home/**/*.js', './client/src/app/home/**/*.css', './client/src/app/home/template/**/*.html'],
+        ['./client/src/app/auth/**/*.js', './client/src/app/auth/**/*.css', './client/src/app/auth/template/**/*.html']
     ]
 }
 
@@ -37,17 +37,17 @@ gulp.task('dev', function () {
     var modules = get3RDParties().concat(getModules());
     for (var id in modules) sources.push(gulp.src(modules[id], {read: false}));
     //
-    return gulp.src('./client/src/app/home/view/index.html')
+    return gulp.src('./client/src/app/home/index.html')
         .pipe(inject(series(sources), { ignorePath: "/client/src/" }))
         .pipe(gulp.dest('./client/src'));
 });
 
-gulp.task('prod', ['jquery-js', 'bootstrap-js', 'bootstrap-css', 'app-js', 'app-css'], function() {
+gulp.task('prod', ['jquery-js', 'bootstrap-js', 'bootstrap-css', 'app-js', 'app-css', 'app-html'], function() {
     var sources = [];
     var modules = getModules();
     for (var id in modules) sources = sources.concat(modules[id]);
 
-    gulp.src('./client/src/app/home/view/index.html')
+    gulp.src('./client/src/app/home/index.html')
         .pipe(inject(gulp.src([
             "./client/public/lib/jquery/**/*.*",
             "./client/public/lib/bootstrap/**/*.*",
@@ -74,7 +74,6 @@ gulp.task('app-js', function() {
         .pipe(gulp.dest('./client/public/lib/app/js/'));
 });
 
-
 gulp.task('app-css', function() {
     var sources = [];
     var modules = getModules();
@@ -87,6 +86,19 @@ gulp.task('app-css', function() {
         .pipe(gulp.dest('./client/public/lib/app/css/'));
 });
 
+gulp.task('app-html', function() {
+    var sources = [];
+    var modules = getModules();
+    for (var id in modules) sources = sources.concat(modules[id]);
+
+    return gulp.src(sources, {base: "./client/src"})
+        .pipe(filter('**/*.html'))
+        .pipe(minifyHTML({
+            conditionals:   true,
+            spare:          true
+        }))
+        .pipe(gulp.dest('./client/public/'));
+});
 
 gulp.task('jquery-js', function() {
     return gulp.src(sources.jquery)
