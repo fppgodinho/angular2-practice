@@ -10,11 +10,12 @@ var ts          = require('gulp-typescript');
 var rename      = require("gulp-rename");
 var clean       = require('gulp-clean');
 var runSequence = require('run-sequence');
+var jade        = require('gulp-jade');
 
 function getModules() {
     return [
-        ['./client/src/app/home/**/*.ts', './client/src/app/home/**/*.js', './client/src/app/home/**/*.css', './client/src/app/home/template/**/*.html'],
-        ['./client/src/app/auth/**/*.ts', './client/src/app/auth/**/*.js', './client/src/app/auth/**/*.css', './client/src/app/auth/template/**/*.html'],
+        ['./client/src/app/home/**/*.ts', './client/src/app/home/**/*.js', './client/src/app/home/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/home/template/**/*.html'],
+        ['./client/src/app/auth/**/*.ts', './client/src/app/auth/**/*.js', './client/src/app/auth/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/auth/template/**/*.html'],
     ]
 }
 var sources = {
@@ -139,6 +140,7 @@ gulp.task('prod-app', function(finish){
         'prod-app-concat',
         'prod-app-css',
         'prod-app-html',
+        'prod-app-jade',
         finish);
 });
 
@@ -153,7 +155,6 @@ gulp.task('prod-app-concat', function() {
             var prefix  = type.substr(1);
             var temp    = "./temp/" + source.split("./client/src/").join("").replace(".ts", ".js");
             streams.push(temp);
-            console.log(streams.length + ", " + source + ", " + temp);
         }
     }
 
@@ -201,6 +202,26 @@ gulp.task('prod-app-css', function() {
         .pipe(concat('style.css'))
         .pipe(minifyCss({keepSpecialComments: 0}))
         .pipe(gulp.dest('./client/public/lib/app/'));
+});
+
+gulp.task('prod-app-jade', function() {
+    var streams = [];
+    var modules = getModules();
+    for (var id in modules) streams = streams.concat(modules[id]);
+
+    return gulp.src(streams, {base: "./client/src"})
+        .pipe(filter('**/*.jade'))
+        .pipe(jade({
+            pretty:         true,
+        }))
+        .pipe(minifyHTML({
+            conditionals:   true,
+            spare:          true
+        }))
+        .pipe(rename({
+            extname: ".jade"
+        }))
+        .pipe(gulp.dest('./client/public/'));
 });
 
 gulp.task('prod-app-html', function() {

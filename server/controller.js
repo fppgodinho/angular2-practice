@@ -13,6 +13,15 @@ function ServerController() {
     _instance.getApp        = function() { return _app; };
     _app.locals.pretty      = true;
     _app.use(_router);
+    _instance.setJade       = function(path, ext) {
+        ext                 = ext || "jade";
+        _instance.getJade   = function(){ return path; };
+        _app.set('views', path);
+        _app.engine('.' + ext, require('jade').__express);
+        _router.use('*.' + ext, function(req, res, next){
+            res.render(path + req.originalUrl);
+        });
+    };
 
     _instance.setStatic     = function(path) {
         _instance.getStatic = function(){ return path; };
