@@ -1,3 +1,5 @@
+// ---------------------------------------------------------------------------------------------------------------------
+// { region Dependencies
 var series      = require('stream-series');
 var gulp        = require('gulp');
 var inject      = require('gulp-inject');
@@ -12,29 +14,28 @@ var clean       = require('gulp-clean');
 var runSequence = require('run-sequence');
 var jade        = require('gulp-jade');
 var less        = require('gulp-less');
+// } endregion
+// ---------------------------------------------------------------------------------------------------------------------
 
-function getModules() {
-    return [
-        ['./client/src/app/home/**/*.ts', './client/src/app/home/**/*.js', './client/src/app/home/**/*.less', './client/src/app/home/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/home/template/**/*.html'],
-        ['./client/src/app/auth/**/*.ts', './client/src/app/auth/**/*.js', './client/src/app/auth/**/*.less', './client/src/app/auth/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/auth/template/**/*.html'],
-    ]
-}
-var sources = {
-    'less':         ['./client/src/3rdparty/typescript/engine.js',          './client/src/3rdparty/less/compiler.js'],
-    'typescript':   ['./client/src/3rdparty/typescript/engine.js',          './client/src/3rdparty/typescript/compiler.js'],
-    'jquery':       ['./client/src/3rdparty/jquery/2.1.4.js'],
-    'bootstrap':    ['./client/src/3rdparty/bootstrap/js/bootstrap.js',     './client/src/3rdparty/bootstrap/css/**/*.css'],
-    'angular':      ['./client/src/3rdparty/angular/deploy/**/*.js',        './client/src/3rdparty/angular/deploy/**/*.css']
+// ---------------------------------------------------------------------------------------------------------------------
+// { region Config
+var sources3rdParty = {
+    'jquery':       {dev: true, prod: true,     streams: ['./client/src/3rdparty/jquery/2.1.4.js']},
+    'bootstrap':    {dev: true, prod: true,     streams: ['./client/src/3rdparty/bootstrap/js/bootstrap.js',    './client/src/3rdparty/bootstrap/css/**/*.css']},
+    'angular':      {dev: true, prod: true,     streams: ['./client/src/3rdparty/angular/deploy/**/*.js',       './client/src/3rdparty/angular/deploy/**/*.css']},
+    'less':         {dev: true, prod: false,    streams: ['./client/src/3rdparty/typescript/engine.js',         './client/src/3rdparty/less/compiler.js']},
+    'typescript':   {dev: true, prod: false,    streams: ['./client/src/3rdparty/typescript/engine.js',         './client/src/3rdparty/typescript/compiler.js']}
 };
 
-function get3RDParties() {
-    return [
-        sources.jquery,
-        sources.bootstrap,
-        sources.angular
-    ]
-}
+var sourcesAppModules = {
+    'home':         {dev: true, prod: true,     streams: ['./client/src/app/home/**/*.js', './client/src/app/home/**/*.ts', './client/src/app/home/**/*.css', './client/src/app/home/**/*.less', './client/src/app/home/template/**/*.html', './client/src/app/home/template/**/*.jade']},
+    'auth':         {dev: true, prod: true,     streams: ['./client/src/app/auth/**/*.js', './client/src/app/auth/**/*.ts', './client/src/app/auth/**/*.css', './client/src/app/auth/**/*.less', './client/src/app/auth/template/**/*.html', './client/src/app/auth/template/**/*.jade']}
+};
+// } endregion
+// ---------------------------------------------------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------------------------------
+// { region Dev
 gulp.task('default', ['dev']);
 
 gulp.task('all', function(finish){
@@ -51,12 +52,14 @@ gulp.task('dev-create-temp', function() {
 });
 
 gulp.task('dev-css', function() {
-    var streams = [];
-    var modules = get3RDParties().concat(getModules().concat([sources.less, sources.typescript]));
-    for (var id in modules) streams.push(gulp.src(modules[id], {read: false}));
+    var streams = gulp.src(
+        get3RDPartySources(true, false, ["css", "less"])
+        .concat(getAppMduleSources(true, false, ["css", "less"]))
+    );
     //
+
     return gulp.src('./client/src/app/home/index.html')
-        .pipe(inject(series(streams).pipe(filter(['**/*.css', '**/*.less'])), {
+        .pipe(inject(streams, {
             starttag: '<!-- inject:css -->',
             ignorePath: "/client/src/",
             transform: function (filepath) {
@@ -68,12 +71,15 @@ gulp.task('dev-css', function() {
 });
 
 gulp.task('dev-js', function() {
-    var streams = [];
-    var modules = get3RDParties().concat(getModules().concat([sources.less, sources.typescript]));
-    for (var id in modules) streams.push(gulp.src(modules[id], {read: false}));
+    var streams = gulp.src (
+        get3RDPartySources(false, true, ["js", "ts"])
+        .concat(getAppMduleSources(true, false, ["js", "ts"]))
+        .concat(get3RDPartySources(true, false, ["js", "ts"], ['less', 'typescript']))
+    );
+
     //
     return gulp.src('./temp/index.html')
-        .pipe(inject(series(streams).pipe(filter(['**/*.js', '**/*.ts'])), {
+        .pipe(inject(streams, {
             starttag: '<!-- inject:js -->',
             ignorePath: "/client/src/",
             transform: function (filepath) {
@@ -88,7 +94,11 @@ gulp.task('dev-destroy-temp', function() {
     return gulp.src('./temp', {read: false})
         .pipe(clean());
 });
+// } endregion
+// ---------------------------------------------------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------------------------------
+// { region Prod
 gulp.task('prod', function(finish) {
     runSequence(
         'prod-create-temp',
@@ -112,11 +122,9 @@ gulp.task('prod-jquery', function(finish){
 });
 
 gulp.task('prod-jquery-js', function() {
-    return gulp.src(sources.jquery)
-        .pipe(filter('**/*.js'))
+    return gulp.src(get3RDPartySources(false, true, ["js"], ["jquery"]))
         .pipe(uglify())
         .pipe(gulp.dest('./client/public/lib/jquery/'));
-
 });
 
 gulp.task('prod-bootstrap', function(finish){
@@ -127,15 +135,13 @@ gulp.task('prod-bootstrap', function(finish){
 });
 
 gulp.task('prod-bootstrap-js', function(end) {
-    return gulp.src(sources.bootstrap)
-        .pipe(filter('**/*.js'))
+    return gulp.src(get3RDPartySources(false, true, ["js"], ["bootstrap"]))
         .pipe(uglify())
         .pipe(gulp.dest('./client/public/lib/bootstrap/'));
 });
 
 gulp.task('prod-bootstrap-css', function(end) {
-    return gulp.src(sources.bootstrap)
-        .pipe(filter('**/*.css'))
+    return gulp.src(get3RDPartySources(false, true, ["css"], ["bootstrap"]))
         .pipe(minifyCss({keepSpecialComments: 0}))
         .pipe(gulp.dest('./client/public/lib/bootstrap/'));
 });
@@ -154,113 +160,56 @@ gulp.task('prod-app', function(finish){
 });
 
 gulp.task('prod-app-ts', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var id in modules) streams = streams.concat(modules[id]);
-
-    return gulp.src(streams, {base: "./client/src"})
-        .pipe(filter('**/*.ts'))
+    return gulp.src(getAppMduleSources(false, true, ["ts"]), {base: "./client/src"})
         .pipe(ts())
         .pipe(rename({
-            prefix: "ts-",
-            extname: ".js"
+            extname: ".ts"
         }))
         .pipe(gulp.dest('./temp/'));
 });
 
 gulp.task('prod-app-js', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var id in modules) streams = streams.concat(modules[id]);
-
-    return gulp.src(streams, {base: "./client/src"})
-        .pipe(filter('**/*.js'))
-        .pipe(rename({
-            prefix: "js-",
-        }))
+    return gulp.src(getAppMduleSources(false, true, ["js"]), {base: "./client/src"})
         .pipe(gulp.dest('./temp/'));
 });
 
 gulp.task('prod-app-concat-scripts', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var modID in modules) {
-        for (var sourceID in modules[modID]){
-            var source  = modules[modID][sourceID]
-            var type    = source.substr(source.lastIndexOf(".")).toLowerCase();
-            if (type != ".js" && type != ".ts") continue;
-            var prefix  = type.substr(1);
-            var temp    = "./temp/" + source.split("./client/src/").join("").replace(".ts", ".js");
-            streams.push(temp);
-        }
-    }
+    var streams = getAppMduleSources(false, true, ["js", "ts"]);
+    for (var i in streams) streams[i]  = "./temp/" + streams[i].split("./client/src/").join("");
 
     return gulp.src(streams)
         .pipe(concat('script.js'))
-        .pipe(uglify())
+        //.pipe(uglify())
         .pipe(gulp.dest('./client/public/lib/app/'));
 });
 
 gulp.task('prod-app-less', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var id in modules) streams = streams.concat(modules[id]);
-
-    return gulp.src(streams, {base: "./client/src"})
-        .pipe(filter('**/*.less'))
+    return gulp.src(getAppMduleSources(false, true, ["less"]), {base: "./client/src"})
         .pipe(less())
         .pipe(rename({
-            prefix: "less-",
-            extname: ".css"
+            extname: ".less"
         }))
         .pipe(gulp.dest('./temp/'));
 });
 
 gulp.task('prod-app-css', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var id in modules) streams = streams.concat(modules[id]);
-
-    return gulp.src(streams, {base: "./client/src"})
+    return gulp.src(getAppMduleSources(false, true, ["css"]), {base: "./client/src"})
         .pipe(filter('**/*.css'))
-        .pipe(rename({
-            prefix: "css-",
-        }))
         .pipe(gulp.dest('./temp/'));
 });
 
 gulp.task('prod-app-concat-styles', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var modID in modules) {
-        for (var sourceID in modules[modID]){
-            var source  = modules[modID][sourceID]
-            var type    = source.substr(source.lastIndexOf(".")).toLowerCase();
-            if (type != ".css" && type != ".less") continue;
-            var prefix  = type.substr(1);
-            var temp    = "./temp/" + source.split("./client/src/").join("").replace(".less", ".css");
-            streams.push(temp);
-        }
-    }
+    var streams = getAppMduleSources(false, true, ["css", "less"]);
+    for (var i in streams) streams[i]  = "./temp/" + streams[i].split("./client/src/").join("");
 
     return gulp.src(streams)
-        .pipe(filter('**/*.css'))
         .pipe(concat('style.css'))
         .pipe(minifyCss({keepSpecialComments: 0}))
         .pipe(gulp.dest('./client/public/lib/app/'));
-        //.pipe(concat('style.css'))
-        //.pipe(uglify())
-        //.pipe(gulp.dest('./client/public/lib/app/'));
 });
 
-
 gulp.task('prod-app-jade', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var id in modules) streams = streams.concat(modules[id]);
-
-    return gulp.src(streams, {base: "./client/src"})
-        .pipe(filter('**/*.jade'))
+    return gulp.src(getAppMduleSources(false, true, ["jade"]), {base: "./client/src"})
         .pipe(jade({
             pretty:         true,
         }))
@@ -275,12 +224,7 @@ gulp.task('prod-app-jade', function() {
 });
 
 gulp.task('prod-app-html', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var id in modules) streams = streams.concat(modules[id]);
-
-    return gulp.src(streams, {base: "./client/src"})
-        .pipe(filter('**/*.html'))
+    return gulp.src(getAppMduleSources(false, true, ["html"]), {base: "./client/src"})
         .pipe(minifyHTML({
             conditionals:   true,
             spare:          true
@@ -306,4 +250,33 @@ gulp.task('prod-destroy-temp', function() {
     return gulp.src('./temp', {read: false})
         .pipe(clean());
 });
+// } endregion
+// ---------------------------------------------------------------------------------------------------------------------
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// { region Helpers
+function get3RDPartySources(dev, prod, types, modules) { return getSources(sources3rdParty, dev, prod, types, modules); }
+
+function getAppMduleSources(dev, prod, types, modules) { return getSources(sourcesAppModules, dev, prod, types, modules); }
+
+function getSources(collection, dev, prod, types, modules) {
+    var sources = [];
+    for (var id in collection) {
+        var source  =  collection[id];
+        if (!modules || source == modules || (modules && modules.indexOf(id) >= 0))
+            if ((dev && source.dev) || (prod && source.prod)) sources = sources.concat(source.streams);
+    }
+    //
+    var i       = 0;
+    while (i < sources.length) {
+        var stream  = sources[i];
+        var type    = stream.substr(stream.lastIndexOf(".")+1).toLowerCase();
+        if (types && type != types && types.indexOf(type) < 0) sources.splice(i, 1);
+        else i++;
+    }
+
+    return sources;
+}
+// } endregion
+// ---------------------------------------------------------------------------------------------------------------------
