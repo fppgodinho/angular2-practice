@@ -3,4 +3,4 @@ function test() {
     var foo = "bar";
     return foo;
 }
-console.log("home controller: " + test());
+console.log("Auth controller: " + test());

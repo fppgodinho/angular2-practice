@@ -9,15 +9,19 @@
         <link rel="stylesheet" href="/app/home/style/style.css">
         <link rel="stylesheet" href="/app/auth/style/style.css">
         <!-- endinject -->
-
-        <!-- inject:js -->
-        <script src="/3rdparty/jquery/2.1.4.js"></script>
-        <script src="/3rdparty/bootstrap/js/bootstrap.js"></script>
-        <script src="/app/home/script/controller.js"></script>
-        <script src="/app/auth/script/controller.js"></script>
-        <!-- endinject -->
     </head>
     <body>
         Hello World!
+        
+        <!-- inject:js -->
+        <script  src="/3rdparty/jquery/2.1.4.js"></script>
+        <script  src="/3rdparty/bootstrap/js/bootstrap.js"></script>
+        <script type="text/typescript" src="/app/home/script/foo.ts"></script>
+        <script  src="/app/home/script/controller.js"></script>
+        <script type="text/typescript" src="/app/auth/script/foo.ts"></script>
+        <script  src="/app/auth/script/controller.js"></script>
+        <script  src="/3rdparty/typescript/engine.js"></script>
+        <script  src="/3rdparty/typescript/compiler.js"></script>
+        <!-- endinject -->
     </body>
 </html>

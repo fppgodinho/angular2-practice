@@ -1,2 +1,2 @@
 "use strict";
-console.log("auth controller");
+console.log("Home controller");

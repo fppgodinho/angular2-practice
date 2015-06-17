@@ -4,9 +4,6 @@
   "description": "Angular 2 Tutorials",
   "main": "run.js",
   "scripts": {
-    "install": "npm run install-gulp && npm run install-gulp-inject",
-    "install-gulp": "npm install -g gulp",
-    "install-gulp-inject": "npm install --save-dev gulp-inject",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -28,14 +25,18 @@
   },
   "devDependencies": {
     "gulp": "^3.9.0",
+    "gulp-clean": "^0.3.1",
     "gulp-concat": "^2.5.2",
     "gulp-filter": "^2.0.2",
     "gulp-inject": "^1.3.1",
     "gulp-less": "^3.0.3",
     "gulp-minify-css": "^1.1.6",
     "gulp-minify-html": "^1.0.3",
+    "gulp-rename": "^1.2.2",
+    "gulp-typescript": "^2.7.7",
     "gulp-uglify": "^1.2.0",
     "path": "^0.11.14",
+    "run-sequence": "^1.1.0",
     "stream-series": "^0.1.1"
   }
 }
