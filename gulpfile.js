@@ -11,18 +11,20 @@ var rename      = require("gulp-rename");
 var clean       = require('gulp-clean');
 var runSequence = require('run-sequence');
 var jade        = require('gulp-jade');
+var less        = require('gulp-less');
 
 function getModules() {
     return [
-        ['./client/src/app/home/**/*.ts', './client/src/app/home/**/*.js', './client/src/app/home/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/home/template/**/*.html'],
-        ['./client/src/app/auth/**/*.ts', './client/src/app/auth/**/*.js', './client/src/app/auth/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/auth/template/**/*.html'],
+        ['./client/src/app/home/**/*.ts', './client/src/app/home/**/*.js', './client/src/app/home/**/*.less', './client/src/app/home/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/home/template/**/*.html'],
+        ['./client/src/app/auth/**/*.ts', './client/src/app/auth/**/*.js', './client/src/app/auth/**/*.less', './client/src/app/auth/**/*.css', './client/src/app/home/template/**/*.jade', './client/src/app/auth/template/**/*.html'],
     ]
 }
 var sources = {
-    'typescript':   ['./client/src/3rdparty/typescript/engine.js', './client/src/3rdparty/typescript/compiler.js'],
+    'less':         ['./client/src/3rdparty/typescript/engine.js',          './client/src/3rdparty/less/compiler.js'],
+    'typescript':   ['./client/src/3rdparty/typescript/engine.js',          './client/src/3rdparty/typescript/compiler.js'],
     'jquery':       ['./client/src/3rdparty/jquery/2.1.4.js'],
-    'bootstrap':    ['./client/src/3rdparty/bootstrap/js/bootstrap.js', './client/src/3rdparty/bootstrap/css/**/*.css'],
-    'angular':      ['./client/src/3rdparty/angular/deploy/**/*.js',    './client/src/3rdparty/angular/deploy/**/*.css']
+    'bootstrap':    ['./client/src/3rdparty/bootstrap/js/bootstrap.js',     './client/src/3rdparty/bootstrap/css/**/*.css'],
+    'angular':      ['./client/src/3rdparty/angular/deploy/**/*.js',        './client/src/3rdparty/angular/deploy/**/*.css']
 };
 
 function get3RDParties() {
@@ -50,19 +52,24 @@ gulp.task('dev-create-temp', function() {
 
 gulp.task('dev-css', function() {
     var streams = [];
-    var modules = get3RDParties().concat(getModules().concat(sources.typescript));
+    var modules = get3RDParties().concat(getModules().concat([sources.less, sources.typescript]));
     for (var id in modules) streams.push(gulp.src(modules[id], {read: false}));
     //
     return gulp.src('./client/src/app/home/index.html')
-        .pipe(inject(series(streams).pipe(filter('**/*.css')), {
-            ignorePath: "/client/src/"
+        .pipe(inject(series(streams).pipe(filter(['**/*.css', '**/*.less'])), {
+            starttag: '<!-- inject:css -->',
+            ignorePath: "/client/src/",
+            transform: function (filepath) {
+                var type = (filepath.substr(filepath.lastIndexOf(".")).toLowerCase() == ".less")?'stylesheet/less':'stylesheet';
+                return '<link rel="' + type + '" type="text/css" href="' + filepath + '" />';
+            }
         }))
         .pipe(gulp.dest('./temp'));
 });
 
 gulp.task('dev-js', function() {
     var streams = [];
-    var modules = get3RDParties().concat(getModules().concat(sources.typescript));
+    var modules = get3RDParties().concat(getModules().concat([sources.less, sources.typescript]));
     for (var id in modules) streams.push(gulp.src(modules[id], {read: false}));
     //
     return gulp.src('./temp/index.html')
@@ -70,7 +77,7 @@ gulp.task('dev-js', function() {
             starttag: '<!-- inject:js -->',
             ignorePath: "/client/src/",
             transform: function (filepath) {
-                var type = (filepath.substr(filepath.lastIndexOf(".")).toLowerCase() == ".ts")?'type="text/typescript"':''
+                var type = (filepath.substr(filepath.lastIndexOf(".")).toLowerCase() == ".ts")?'type="text/typescript"':'';
                 return '<script ' + type + ' src="' + filepath + '"></script>';
             }
         }))
@@ -137,31 +144,13 @@ gulp.task('prod-app', function(finish){
     runSequence(
         'prod-app-ts',
         'prod-app-js',
-        'prod-app-concat',
+        'prod-app-concat-scripts',
+        'prod-app-less',
         'prod-app-css',
+        'prod-app-concat-styles',
         'prod-app-html',
         'prod-app-jade',
         finish);
-});
-
-gulp.task('prod-app-concat', function() {
-    var streams = [];
-    var modules = getModules();
-    for (var modID in modules) {
-        for (var sourceID in modules[modID]){
-            var source  = modules[modID][sourceID]
-            var type    = source.substr(source.lastIndexOf(".")).toLowerCase();
-            if (type != ".js" && type != ".ts") continue;
-            var prefix  = type.substr(1);
-            var temp    = "./temp/" + source.split("./client/src/").join("").replace(".ts", ".js");
-            streams.push(temp);
-        }
-    }
-
-    return gulp.src(streams)
-        .pipe(concat('script.js'))
-        .pipe(uglify())
-        .pipe(gulp.dest('./client/public/lib/app/'));
 });
 
 gulp.task('prod-app-ts', function() {
@@ -192,17 +181,78 @@ gulp.task('prod-app-js', function() {
         .pipe(gulp.dest('./temp/'));
 });
 
+gulp.task('prod-app-concat-scripts', function() {
+    var streams = [];
+    var modules = getModules();
+    for (var modID in modules) {
+        for (var sourceID in modules[modID]){
+            var source  = modules[modID][sourceID]
+            var type    = source.substr(source.lastIndexOf(".")).toLowerCase();
+            if (type != ".js" && type != ".ts") continue;
+            var prefix  = type.substr(1);
+            var temp    = "./temp/" + source.split("./client/src/").join("").replace(".ts", ".js");
+            streams.push(temp);
+        }
+    }
+
+    return gulp.src(streams)
+        .pipe(concat('script.js'))
+        .pipe(uglify())
+        .pipe(gulp.dest('./client/public/lib/app/'));
+});
+
+gulp.task('prod-app-less', function() {
+    var streams = [];
+    var modules = getModules();
+    for (var id in modules) streams = streams.concat(modules[id]);
+
+    return gulp.src(streams, {base: "./client/src"})
+        .pipe(filter('**/*.less'))
+        .pipe(less())
+        .pipe(rename({
+            prefix: "less-",
+            extname: ".css"
+        }))
+        .pipe(gulp.dest('./temp/'));
+});
+
 gulp.task('prod-app-css', function() {
     var streams = [];
     var modules = getModules();
     for (var id in modules) streams = streams.concat(modules[id]);
+
+    return gulp.src(streams, {base: "./client/src"})
+        .pipe(filter('**/*.css'))
+        .pipe(rename({
+            prefix: "css-",
+        }))
+        .pipe(gulp.dest('./temp/'));
+});
+
+gulp.task('prod-app-concat-styles', function() {
+    var streams = [];
+    var modules = getModules();
+    for (var modID in modules) {
+        for (var sourceID in modules[modID]){
+            var source  = modules[modID][sourceID]
+            var type    = source.substr(source.lastIndexOf(".")).toLowerCase();
+            if (type != ".css" && type != ".less") continue;
+            var prefix  = type.substr(1);
+            var temp    = "./temp/" + source.split("./client/src/").join("").replace(".less", ".css");
+            streams.push(temp);
+        }
+    }
 
     return gulp.src(streams)
         .pipe(filter('**/*.css'))
         .pipe(concat('style.css'))
         .pipe(minifyCss({keepSpecialComments: 0}))
         .pipe(gulp.dest('./client/public/lib/app/'));
+        //.pipe(concat('style.css'))
+        //.pipe(uglify())
+        //.pipe(gulp.dest('./client/public/lib/app/'));
 });
+
 
 gulp.task('prod-app-jade', function() {
     var streams = [];
